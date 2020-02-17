@@ -521,10 +521,7 @@ module.exports = class okcoinusd extends Exchange {
         const request = {};
         const response = await this.publicGetTickers (this.extend (request, params));
         const tickers = response['tickers'];
-        let timestamp = this.safeInteger (response, 'date');
-        if (timestamp !== undefined) {
-            timestamp *= 1000;
-        }
+        const timestamp = this.safeTimestamp (response, 'date');
         const result = {};
         for (let i = 0; i < tickers.length; i++) {
             let ticker = tickers[i];
@@ -645,9 +642,8 @@ module.exports = class okcoinusd extends Exchange {
         if (ticker === undefined) {
             throw new ExchangeError (this.id + ' fetchTicker returned an empty response: ' + this.json (response));
         }
-        let timestamp = this.safeInteger (response, 'date');
+        const timestamp = this.safeTimestamp (response, 'date');
         if (timestamp !== undefined) {
-            timestamp *= 1000;
             ticker = this.extend (ticker, { 'timestamp': timestamp });
         }
         return this.parseTicker (ticker, market);
@@ -717,7 +713,6 @@ module.exports = class okcoinusd extends Exchange {
         const method = market['future'] ? 'publicGetFutureKline' : 'publicGetKline';
         const request = this.createRequest (market, {
             'type': this.timeframes[timeframe],
-            // 'since': since === undefined ? this.milliseconds () - 86400000 : since,  // default last 24h
         });
         if (since !== undefined) {
             request['since'] = parseInt ((this.milliseconds () - 86400000) / 1000); // default last 24h
@@ -1091,7 +1086,7 @@ module.exports = class okcoinusd extends Exchange {
         }, params);
     }
 
-    handleErrors (code, reason, url, method, headers, body, response) {
+    handleErrors (code, reason, url, method, headers, body, response, requestHeaders, requestBody) {
         if (response === undefined) {
             return; // fallback to default error handler
         }

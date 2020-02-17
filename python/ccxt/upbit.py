@@ -647,9 +647,7 @@ class upbit (Exchange):
         if timestamp is None:
             timestamp = self.parse8601(self.safe_string(trade, 'created_at'))
         side = None
-        askOrBid = self.safe_string_2(trade, 'ask_bid', 'side')
-        if askOrBid is not None:
-            askOrBid = askOrBid.lower()
+        askOrBid = self.safe_string_lower_2(trade, 'ask_bid', 'side')
         if askOrBid == 'ask':
             side = 'sell'
         elif askOrBid == 'bid':
@@ -913,7 +911,7 @@ class upbit (Exchange):
         #         ...,
         #     ]
         #
-        return self.parseTransactions(response, currency, since, limit)
+        return self.parse_transactions(response, currency, since, limit)
 
     def fetch_withdrawals(self, code=None, since=None, limit=None, params={}):
         self.load_markets()
@@ -944,7 +942,7 @@ class upbit (Exchange):
         #         ...,
         #     ]
         #
-        return self.parseTransactions(response, currency, since, limit)
+        return self.parse_transactions(response, currency, since, limit)
 
     def parse_transaction_status(self, status):
         statuses = {
@@ -1411,7 +1409,7 @@ class upbit (Exchange):
                 headers['Content-Type'] = 'application/json'
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 
-    def handle_errors(self, httpCode, reason, url, method, headers, body, response):
+    def handle_errors(self, httpCode, reason, url, method, headers, body, response, requestHeaders, requestBody):
         if response is None:
             return  # fallback to default error handler
         #

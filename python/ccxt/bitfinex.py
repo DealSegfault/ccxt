@@ -298,6 +298,7 @@ class bitfinex (Exchange):
                 'DAD': 'DADI',
                 'DAT': 'DATA',
                 'DSH': 'DASH',
+                'DRK': 'DRK',
                 'GSD': 'GUSD',
                 'HOT': 'Hydro Protocol',
                 'IOS': 'IOST',
@@ -354,7 +355,9 @@ class bitfinex (Exchange):
                     'ANT': 'ant',
                     'AVT': 'aventus',  # #1811
                     'BAT': 'bat',
-                    'BCH': 'bcash',  # undocumented
+                    # https://github.com/ccxt/ccxt/issues/5833
+                    'BCH': 'bab',  # undocumented
+                    # 'BCH': 'bcash',  # undocumented
                     'BCI': 'bci',
                     'BFT': 'bft',
                     'BTC': 'bitcoin',
@@ -375,6 +378,9 @@ class bitfinex (Exchange):
                     'GNT': 'golem',
                     'IOST': 'ios',
                     'IOTA': 'iota',
+                    # https://github.com/ccxt/ccxt/issues/5833
+                    'LEO': 'let',  # ETH chain
+                    # 'LEO': 'les',  # EOS chain
                     'LRC': 'lrc',
                     'LTC': 'litecoin',
                     'LYM': 'lym',
@@ -401,6 +407,7 @@ class bitfinex (Exchange):
                     'TNB': 'tnb',
                     'TRX': 'trx',
                     'USD': 'wire',
+                    'USDC': 'udc',  # https://github.com/ccxt/ccxt/issues/5833
                     'UTK': 'utk',
                     'USDT': 'tetheruso',  # undocumented
                     'VEE': 'vee',
@@ -643,9 +650,7 @@ class bitfinex (Exchange):
         if timestamp is not None:
             timestamp = int(timestamp) * 1000
         type = None
-        side = self.safe_string(trade, 'type')
-        if side is not None:
-            side = side.lower()
+        side = self.safe_string_lower(trade, 'type')
         orderId = self.safe_string(trade, 'order_id')
         price = self.safe_float(trade, 'price')
         amount = self.safe_float(trade, 'amount')
@@ -927,7 +932,7 @@ class bitfinex (Exchange):
         #         }
         #     ]
         #
-        return self.parseTransactions(response, currency, since, limit)
+        return self.parse_transactions(response, currency, since, limit)
 
     def parse_transaction(self, transaction, currency=None):
         #
@@ -973,9 +978,7 @@ class bitfinex (Exchange):
             updated = int(updated * 1000)
         currencyId = self.safe_string(transaction, 'currency')
         code = self.safe_currency_code(currencyId, currency)
-        type = self.safe_string(transaction, 'type')  # DEPOSIT or WITHDRAWAL
-        if type is not None:
-            type = type.lower()
+        type = self.safe_string_lower(transaction, 'type')  # DEPOSIT or WITHDRAWAL
         status = self.parse_transaction_status(self.safe_string(transaction, 'status'))
         feeCost = self.safe_float(transaction, 'fee')
         if feeCost is not None:
@@ -1070,7 +1073,7 @@ class bitfinex (Exchange):
             }
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 
-    def handle_errors(self, code, reason, url, method, headers, body, response):
+    def handle_errors(self, code, reason, url, method, headers, body, response, requestHeaders, requestBody):
         if response is None:
             return
         if code >= 400:

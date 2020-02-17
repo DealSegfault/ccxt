@@ -284,6 +284,7 @@ module.exports = class bitfinex extends Exchange {
                 'DAD': 'DADI',
                 'DAT': 'DATA',
                 'DSH': 'DASH',
+                'DRK': 'DRK',
                 'GSD': 'GUSD',
                 'HOT': 'Hydro Protocol',
                 'IOS': 'IOST',
@@ -340,7 +341,9 @@ module.exports = class bitfinex extends Exchange {
                     'ANT': 'ant',
                     'AVT': 'aventus', // #1811
                     'BAT': 'bat',
-                    'BCH': 'bcash', // undocumented
+                    // https://github.com/ccxt/ccxt/issues/5833
+                    'BCH': 'bab', // undocumented
+                    // 'BCH': 'bcash', // undocumented
                     'BCI': 'bci',
                     'BFT': 'bft',
                     'BTC': 'bitcoin',
@@ -361,6 +364,9 @@ module.exports = class bitfinex extends Exchange {
                     'GNT': 'golem',
                     'IOST': 'ios',
                     'IOTA': 'iota',
+                    // https://github.com/ccxt/ccxt/issues/5833
+                    'LEO': 'let', // ETH chain
+                    // 'LEO': 'les', // EOS chain
                     'LRC': 'lrc',
                     'LTC': 'litecoin',
                     'LYM': 'lym',
@@ -387,6 +393,7 @@ module.exports = class bitfinex extends Exchange {
                     'TNB': 'tnb',
                     'TRX': 'trx',
                     'USD': 'wire',
+                    'USDC': 'udc', // https://github.com/ccxt/ccxt/issues/5833
                     'UTK': 'utk',
                     'USDT': 'tetheruso', // undocumented
                     'VEE': 'vee',
@@ -655,10 +662,7 @@ module.exports = class bitfinex extends Exchange {
             timestamp = parseInt (timestamp) * 1000;
         }
         const type = undefined;
-        let side = this.safeString (trade, 'type');
-        if (side !== undefined) {
-            side = side.toLowerCase ();
-        }
+        const side = this.safeStringLower (trade, 'type');
         const orderId = this.safeString (trade, 'order_id');
         const price = this.safeFloat (trade, 'price');
         const amount = this.safeFloat (trade, 'amount');
@@ -1036,10 +1040,7 @@ module.exports = class bitfinex extends Exchange {
         }
         const currencyId = this.safeString (transaction, 'currency');
         const code = this.safeCurrencyCode (currencyId, currency);
-        let type = this.safeString (transaction, 'type'); // DEPOSIT or WITHDRAWAL
-        if (type !== undefined) {
-            type = type.toLowerCase ();
-        }
+        const type = this.safeStringLower (transaction, 'type'); // DEPOSIT or WITHDRAWAL
         const status = this.parseTransactionStatus (this.safeString (transaction, 'status'));
         let feeCost = this.safeFloat (transaction, 'fee');
         if (feeCost !== undefined) {
@@ -1147,7 +1148,7 @@ module.exports = class bitfinex extends Exchange {
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 
-    handleErrors (code, reason, url, method, headers, body, response) {
+    handleErrors (code, reason, url, method, headers, body, response, requestHeaders, requestBody) {
         if (response === undefined) {
             return;
         }

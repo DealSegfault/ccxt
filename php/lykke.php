@@ -35,11 +35,11 @@ class lykke extends Exchange {
                     'mobile' => 'https://public-api.lykke.com/api',
                     'public' => 'https://hft-api.lykke.com/api',
                     'private' => 'https://hft-api.lykke.com/api',
-                    'test' => array (
-                        'mobile' => 'https://public-api.lykke.com/api',
-                        'public' => 'https://hft-service-dev.lykkex.net/api',
-                        'private' => 'https://hft-service-dev.lykkex.net/api',
-                    ),
+                ),
+                'test' => array (
+                    'mobile' => 'https://public-api.lykke.com/api',
+                    'public' => 'https://hft-service-dev.lykkex.net/api',
+                    'private' => 'https://hft-service-dev.lykkex.net/api',
                 ),
                 'www' => 'https://www.lykke.com',
                 'doc' => array (
@@ -95,6 +95,9 @@ class lykke extends Exchange {
                     ),
                 ),
             ),
+            'commonCurrencies' => array (
+                'XPD' => 'Lykke XPD',
+            ),
         ));
     }
 
@@ -122,10 +125,7 @@ class lykke extends Exchange {
         }
         $id = $this->safe_string($trade, 'id');
         $timestamp = $this->parse8601 ($this->safe_string($trade, 'dateTime'));
-        $side = $this->safe_string($trade, 'action');
-        if ($side !== null) {
-            $side = strtolower($side);
-        }
+        $side = $this->safe_string_lower($trade, 'action');
         $price = $this->safe_float($trade, 'price');
         $amount = $this->safe_float($trade, 'volume');
         $cost = $price * $amount;
@@ -305,11 +305,14 @@ class lykke extends Exchange {
 
     public function parse_order_status ($status) {
         $statuses = array (
+            'Open' => 'open',
             'Pending' => 'open',
             'InOrderBook' => 'open',
             'Processing' => 'open',
             'Matched' => 'closed',
             'Cancelled' => 'canceled',
+            'Rejected' => 'rejected',
+            'Replaced' => 'canceled',
         );
         return $this->safe_string($statuses, $status, $status);
     }

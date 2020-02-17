@@ -514,13 +514,13 @@ class bitso extends Exchange {
         return array( 'url' => $url, 'method' => $method, 'body' => $body, 'headers' => $headers );
     }
 
-    public function handle_errors ($httpCode, $reason, $url, $method, $headers, $body, $response) {
+    public function handle_errors ($httpCode, $reason, $url, $method, $headers, $body, $response, $requestHeaders, $requestBody) {
         if ($response === null) {
             return; // fallback to default $error handler
         }
         if (is_array($response) && array_key_exists('success', $response)) {
             //
-            //     array("$success":false,"$error":{"$code":104,"message":"Cannot perform request - nonce must be higher than 1520307203724237")}
+            //     array("$success":false,"$error":array("$code":104,"message":"Cannot perform request - nonce must be higher than 1520307203724237"))
             //
             $success = $this->safe_value($response, 'success', false);
             if (gettype ($success) === 'string') {

@@ -84,8 +84,8 @@ class hitbtc extends Exchange {
                 'trading' => array (
                     'tierBased' => false,
                     'percentage' => true,
-                    'maker' => -0.01 / 100,
-                    'taker' => 0.1 / 100,
+                    'maker' => 0.07 / 100,
+                    'taker' => 0.07 / 100,
                 ),
                 'funding' => array (
                     'tierBased' => false,
@@ -496,6 +496,13 @@ class hitbtc extends Exchange {
                 'USD' => 'USDT',
                 'XBT' => 'BTC',
             ),
+            'exceptions' => array (
+                'exact' => array (
+                    '2001' => '\\ccxt\\BadSymbol', // array("error":array("code":2001,"message":"Symbol not found","description":"Try get /api/2/public/symbol, to get list of all available symbols."))
+                ),
+                'broad' => array (
+                ),
+            ),
             'options' => array (
                 'defaultTimeInForce' => 'FOK',
             ),
@@ -694,6 +701,9 @@ class hitbtc extends Exchange {
         );
         $timestamp = $this->safe_integer($trade, 'timestamp');
         $id = $this->safe_string($trade, 'tradeId');
+        // we use clientOrderId as the order $id with HitBTC intentionally
+        // because most of their endpoints will require clientOrderId
+        // explained here => https://github.com/ccxt/ccxt/issues/5674
         $orderId = $this->safe_string($trade, 'clientOrderId');
         $side = $this->safe_string($trade, 'side');
         return array (
@@ -776,6 +786,9 @@ class hitbtc extends Exchange {
 
     public function cancel_order ($id, $symbol = null, $params = array ()) {
         $this->load_markets();
+        // we use clientOrderId as the order $id with HitBTC intentionally
+        // because most of their endpoints will require clientOrderId
+        // explained here => https://github.com/ccxt/ccxt/issues/5674
         $request = array (
             'clientOrderId' => $id,
         );
@@ -848,6 +861,9 @@ class hitbtc extends Exchange {
             'currency' => $feeCurrency,
             'rate' => null,
         );
+        // we use clientOrderId as the $order $id with HitBTC intentionally
+        // because most of their endpoints will require clientOrderId
+        // explained here => https://github.com/ccxt/ccxt/issues/5674
         $id = $this->safe_string($order, 'clientOrderId');
         $type = $this->safe_string($order, 'type');
         $side = $this->safe_string($order, 'side');
@@ -872,6 +888,9 @@ class hitbtc extends Exchange {
 
     public function fetch_order ($id, $symbol = null, $params = array ()) {
         $this->load_markets();
+        // we use clientOrderId as the order $id with HitBTC intentionally
+        // because most of their endpoints will require clientOrderId
+        // explained here => https://github.com/ccxt/ccxt/issues/5674
         $request = array (
             'clientOrderId' => $id,
         );
@@ -921,6 +940,9 @@ class hitbtc extends Exchange {
         if ($symbol !== null) {
             $market = $this->market ($symbol);
         }
+        // we use clientOrderId as the order $id with HitBTC intentionally
+        // because most of their endpoints will require clientOrderId
+        // explained here => https://github.com/ccxt/ccxt/issues/5674
         $request = array (
             'clientOrderId' => $id,
         );
@@ -995,5 +1017,26 @@ class hitbtc extends Exchange {
             throw new ExchangeError($this->id . ' ' . $this->json ($response));
         }
         return $response;
+    }
+
+    public function handle_errors ($httpCode, $reason, $url, $method, $headers, $body, $response, $requestHeaders, $requestBody) {
+        if (!$response) {
+            return; // fallback to default $error handler
+        }
+        $error = $this->safe_value($response, 'error');
+        if ($error) {
+            $code = $this->safe_value($error, 'code');
+            $feedback = $this->id . ' ' . $this->json ($response);
+            $exact = $this->exceptions['exact'];
+            if (is_array($exact) && array_key_exists($code, $exact)) {
+                throw new $exact[$code]($feedback);
+            }
+            $broad = $this->exceptions['broad'];
+            $broadKey = $this->findBroadlyMatchedKey ($broad, $error);
+            if ($broadKey !== null) {
+                throw new $broad[$broadKey]($feedback);
+            }
+            throw new ExchangeError($feedback); // unknown $error
+        }
     }
 }

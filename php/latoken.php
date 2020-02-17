@@ -10,7 +10,7 @@ use Exception as Exception; // a common import
 class latoken extends Exchange {
 
     public function describe () {
-        return array_replace_recursive (parent::describe (), {
+        return array_replace_recursive (parent::describe (), array (
             'id' => 'latoken',
             'name' => 'Latoken',
             'countries' => array ( 'KY' ), // Cayman Islands
@@ -90,25 +90,28 @@ class latoken extends Exchange {
                     'taker' => 0.1 / 100,
                 ),
             ),
+            'commonCurrencies' => array (
+                'TSL' => 'Treasure SL',
+            ),
             'options' => array (
                 'createOrderMethod' => 'private_post_order_new', // private_post_order_test_order
             ),
-            'exceptions' => {
-                'exact' => {
-                    'Signature or ApiKey is not valid' => '\\ccxt\\AuthenticationError', // array( "error" => { "message" => "Signature or ApiKey is not valid","errorType":"RequestError","statusCode":400 )}
-                    'Request is out of time' => '\\ccxt\\InvalidNonce', // array( "error" => { "message" => "Request is out of time", "errorType" => "RequestError", "statusCode":400 )}
-                    'Symbol must be specified' => '\\ccxt\\BadRequest', // array( "error" => array ( "message" => "Symbol must be specified","errorType":"RequestError","statusCode":400 )}
+            'exceptions' => array (
+                'exact' => array (
+                    'Signature or ApiKey is not valid' => '\\ccxt\\AuthenticationError',
+                    'Request is out of time' => '\\ccxt\\InvalidNonce',
+                    'Symbol must be specified' => '\\ccxt\\BadRequest',
                 ),
-                'broad' => {
-                    'Request limit reached' => '\\ccxt\\DDoSProtection', // array( "message" => "Request limit reached!", "details" => "Request limit reached. Maximum allowed => 1 per 1s. Please try again in 1 second(s)." )
-                    'Pair' => '\\ccxt\\BadRequest', // array( "error" => { "message" => "Pair 370 is not found","errorType":"RequestError","statusCode":400 )}
-                    'Price needs to be greater than' => '\\ccxt\\InvalidOrder', // array( "error" => { "message" => "Price needs to be greater than 0","errorType":"ValidationError","statusCode":400 )}
-                    'Amount needs to be greater than' => '\\ccxt\\InvalidOrder', // array( "error" => { "message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 )}
-                    'The Symbol field is required' => '\\ccxt\\InvalidOrder', // array( "error" => { "message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 )}
-                    'OrderType is not valid' => '\\ccxt\\InvalidOrder', // array( "error" => { "message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 )}
-                    'Side is not valid' => '\\ccxt\\InvalidOrder', // array( "error" => array ( "message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 )}
-                    'Cancelable order whit' => '\\ccxt\\OrderNotFound', // array( "error" => array ( "message" => "Cancelable order whit ID 1563460289.571254.704945@0370:1 not found","errorType":"RequestError","statusCode":400 )}
-                    'Order' => '\\ccxt\\OrderNotFound', // array( "error" => array ( "message" => "Order 1563460289.571254.704945@0370:1 is not found","errorType":"RequestError","statusCode":400 )}
+                'broad' => array (
+                    'Request limit reached' => '\\ccxt\\DDoSProtection',
+                    'Pair' => '\\ccxt\\BadRequest',
+                    'Price needs to be greater than' => '\\ccxt\\InvalidOrder',
+                    'Amount needs to be greater than' => '\\ccxt\\InvalidOrder',
+                    'The Symbol field is required' => '\\ccxt\\InvalidOrder',
+                    'OrderType is not valid' => '\\ccxt\\InvalidOrder',
+                    'Side is not valid' => '\\ccxt\\InvalidOrder',
+                    'Cancelable order whit' => '\\ccxt\\OrderNotFound',
+                    'Order' => '\\ccxt\\OrderNotFound',
                 ),
             ),
         ));
@@ -168,7 +171,7 @@ class latoken extends Exchange {
                     'max' => null,
                 ),
                 'price' => array (
-                    'min' => null,
+                    'min' => pow(10, -$precision['price']),
                     'max' => null,
                 ),
                 'cost' => array (
@@ -248,7 +251,7 @@ class latoken extends Exchange {
         return $result;
     }
 
-    public function calculate_fee ($symbol, $side, $amount, $price, $takerOrMaker = 'taker') {
+    public function calculate_fee ($symbol, $type, $side, $amount, $price, $takerOrMaker = 'taker', $params = array ()) {
         $market = $this->markets[$symbol];
         $key = 'quote';
         $rate = $market[$takerOrMaker];
@@ -356,8 +359,8 @@ class latoken extends Exchange {
             'change' => $change,
             'percentage' => $percentage,
             'average' => null,
-            'baseVolume' => $this->safe_float($ticker, 'volume'),
-            'quoteVolume' => null,
+            'baseVolume' => null,
+            'quoteVolume' => $this->safe_float($ticker, 'volume'),
             'info' => $ticker,
         );
     }
@@ -417,26 +420,32 @@ class latoken extends Exchange {
         // fetchTrades (public)
         //
         //     {
-        //         "$side":"buy",
-        //         "$price":0.022315,
-        //         "$amount":0.706,
-        //         "$timestamp":1563454655
+        //         $side => 'buy',
+        //         $price => 0.33634,
+        //         $amount => 0.01,
+        //         $timestamp => 1564240008000 // milliseconds
         //     }
         //
         // fetchMyTrades (private)
         //
         //     {
-        //         "$id" => "1555492358.126073.126767@0502:2",
-        //         "$orderId" => "1555492358.126073.126767@0502:2",
-        //         "commission" => 0.012,
-        //         "$side" => "buy",
-        //         "$price" => 136.2,
-        //         "$amount" => 0.7,
-        //         "time" => 1555515807369
+        //         $id => '1564223032.892829.3.tg15',
+        //         $orderId => '1564223032.671436.707548@1379:1',
+        //         commission => 0,
+        //         $side => 'buy',
+        //         $price => 0.32874,
+        //         $amount => 0.607,
+        //         $timestamp => 1564223033 // seconds
         //     }
         //
         $type = null;
         $timestamp = $this->safe_integer_2($trade, 'timestamp', 'time');
+        if ($timestamp !== null) {
+            // 03 Jan 2009 - first block
+            if ($timestamp < 1230940800000) {
+                $timestamp *= 1000;
+            }
+        }
         $price = $this->safe_float($trade, 'price');
         $amount = $this->safe_float($trade, 'amount');
         $side = $this->safe_string($trade, 'side');
@@ -494,10 +503,10 @@ class latoken extends Exchange {
         //         "tradeCount":51,
         //         "$trades" => array (
         //             {
-        //                 "side":"buy",
-        //                 "price":0.022315,
-        //                 "amount":0.706,
-        //                 "timestamp":1563454655
+        //                 side => 'buy',
+        //                 price => 0.33634,
+        //                 amount => 0.01,
+        //                 timestamp => 1564240008000 // milliseconds
         //             }
         //         )
         //     }
@@ -523,13 +532,13 @@ class latoken extends Exchange {
         //         "tradeCount" => 1,
         //         "$trades" => array (
         //             {
-        //                 "id" => "1555492358.126073.126767@0502:2",
-        //                 "orderId" => "1555492358.126073.126767@0502:2",
-        //                 "commission" => 0.012,
-        //                 "side" => "buy",
-        //                 "price" => 136.2,
-        //                 "amount" => 0.7,
-        //                 "time" => 1555515807369
+        //                 id => '1564223032.892829.3.tg15',
+        //                 orderId => '1564223032.671436.707548@1379:1',
+        //                 commission => 0,
+        //                 side => 'buy',
+        //                 price => 0.32874,
+        //                 amount => 0.607,
+        //                 timestamp => 1564223033 // seconds
         //             }
         //         )
         //     }
@@ -582,7 +591,7 @@ class latoken extends Exchange {
         //     }
         //
         $id = $this->safe_string($order, 'orderId');
-        $timestamp = $this->safe_value($order, 'timeCreated');
+        $timestamp = $this->safe_timestamp($order, 'timeCreated');
         $marketId = $this->safe_string($order, 'symbol');
         $symbol = $marketId;
         if (is_array($this->markets_by_id) && array_key_exists($marketId, $this->markets_by_id)) {
@@ -596,7 +605,12 @@ class latoken extends Exchange {
         $price = $this->safe_float($order, 'price');
         $amount = $this->safe_float($order, 'amount');
         $filled = $this->safe_float($order, 'executedAmount');
-        $remaining = $this->safe_float($order, 'reaminingAmount');
+        $remaining = null;
+        if ($amount !== null) {
+            if ($filled !== null) {
+                $remaining = $amount - $filled;
+            }
+        }
         $status = $this->parse_order_status($this->safe_string($order, 'orderStatus'));
         $cost = null;
         if ($filled !== null) {
@@ -604,9 +618,9 @@ class latoken extends Exchange {
                 $cost = $filled * $price;
             }
         }
-        $timeFilled = $this->safe_integer($order, 'timeFilled');
+        $timeFilled = $this->safe_timestamp($order, 'timeFilled');
         $lastTradeTimestamp = null;
-        if ($timeFilled !== null && $timeFilled > 0) {
+        if (($timeFilled !== null) && ($timeFilled > 0)) {
             $lastTradeTimestamp = $timeFilled;
         }
         return array (
@@ -650,7 +664,7 @@ class latoken extends Exchange {
 
     public function fetch_orders_with_method ($method, $symbol = null, $since = null, $limit = null, $params = array ()) {
         if ($symbol === null) {
-            throw ArgumentsRequired ($this->id . ' fetchOrdersWithMethod requires a $symbol argument');
+            throw new ArgumentsRequired($this->id . ' fetchOrdersWithMethod requires a $symbol argument');
         }
         $this->load_markets();
         $market = $this->market ($symbol);
@@ -825,20 +839,20 @@ class latoken extends Exchange {
         return array( 'url' => $url, 'method' => $method, 'body' => $body, 'headers' => $headers );
     }
 
-    public function handle_errors ($code, $reason, $url, $method, $headers, $body, $response) {
+    public function handle_errors ($code, $reason, $url, $method, $headers, $body, $response, $requestHeaders, $requestBody) {
         if (!$response) {
             return;
         }
         //
         //     array( "$message" => "Request limit reached!", "details" => "Request limit reached. Maximum allowed => 1 per 1s. Please try again in 1 second(s)." )
-        //     array( "$error" => { "$message" => "Pair 370 is not found","errorType":"RequestError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Signature or ApiKey is not valid","errorType":"RequestError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Request is out of time", "errorType" => "RequestError", "statusCode":400 )}
-        //     array( "$error" => { "$message" => "Price needs to be greater than 0","errorType":"ValidationError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Cancelable order whit ID 1563460289.571254.704945@0370:1 not found","errorType":"RequestError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Symbol must be specified","errorType":"RequestError","statusCode":400 )}
-        //     array( "$error" => { "$message" => "Order 1563460289.571254.704945@0370:1 is not found","errorType":"RequestError","statusCode":400 )}
+        //     array( "$error" => array( "$message" => "Pair 370 is not found","errorType":"RequestError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Signature or ApiKey is not valid","errorType":"RequestError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Request is out of time", "errorType" => "RequestError", "statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Price needs to be greater than 0","errorType":"ValidationError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Side is not valid, Price needs to be greater than 0, Amount needs to be greater than 0, The Symbol field is required., OrderType is not valid","errorType":"ValidationError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Cancelable order whit ID 1563460289.571254.704945@0370:1 not found","errorType":"RequestError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Symbol must be specified","errorType":"RequestError","statusCode":400 ))
+        //     array( "$error" => array( "$message" => "Order 1563460289.571254.704945@0370:1 is not found","errorType":"RequestError","statusCode":400 ))
         //
         $message = $this->safe_string($response, 'message');
         $exact = $this->exceptions['exact'];

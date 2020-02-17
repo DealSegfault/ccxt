@@ -18,6 +18,7 @@ module.exports = class itbit extends Exchange {
             'has': {
                 'CORS': true,
                 'createMarketOrder': false,
+                'fetchMyTrades': true,
             },
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/1294454/27822159-66153620-60ad-11e7-89e7-005f6d7f3de0.jpg',
@@ -288,7 +289,7 @@ module.exports = class itbit extends Exchange {
             const currency = this.safeString (item, 'currency');
             const destinationAddress = this.safeString (item, 'destinationAddress');
             const txnHash = this.safeString (item, 'txnHash');
-            const transactionType = this.safeString (item, 'transactionType').toLowerCase ();
+            const transactionType = this.safeStringLower (item, 'transactionType');
             const transactionStatus = this.safeString (item, 'status');
             const status = this.parseTransferStatus (transactionStatus);
             result.push ({
@@ -561,7 +562,7 @@ module.exports = class itbit extends Exchange {
             const binhash = this.binaryConcat (binaryUrl, hash);
             const signature = this.hmac (binhash, this.encode (this.secret), 'sha512', 'base64');
             headers = {
-                'Authorization': this.apiKey + ':' + signature,
+                'Authorization': this.apiKey + ':' + this.decode (signature),
                 'Content-Type': 'application/json',
                 'X-Auth-Timestamp': timestamp,
                 'X-Auth-Nonce': nonce,

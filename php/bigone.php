@@ -672,13 +672,13 @@ class bigone extends Exchange {
         return array( 'url' => $url, 'method' => $method, 'body' => $body, 'headers' => $headers );
     }
 
-    public function handle_errors ($httpCode, $reason, $url, $method, $headers, $body, $response) {
+    public function handle_errors ($httpCode, $reason, $url, $method, $headers, $body, $response, $requestHeaders, $requestBody) {
         if ($response === null) {
             return; // fallback to default $error handler
         }
         //
-        //      array("$errors":{"detail":"Internal server $error")}
-        //      array("$errors":[{"message":"invalid nonce, nonce should be a 19bits number","$code":10030)],"$data":null}
+        //      array("$errors":array("detail":"Internal server $error"))
+        //      array("$errors":[array("message":"invalid nonce, nonce should be a 19bits number","$code":10030)],"$data":null)
         //
         $error = $this->safe_value($response, 'error');
         $errors = $this->safe_value($response, 'errors');

@@ -835,7 +835,7 @@ class therock (Exchange):
         transactions = self.safe_value(response, 'transactions', [])
         transactionTypes = ['withdraw', 'atm_payment']
         depositsAndWithdrawals = self.filter_by_array(transactions, 'type', transactionTypes, False)
-        return self.parseTransactions(depositsAndWithdrawals, currency, since, limit)
+        return self.parse_transactions(depositsAndWithdrawals, currency, since, limit)
 
     def parse_order_status(self, status):
         statuses = {
@@ -1133,7 +1133,7 @@ class therock (Exchange):
                 url += '?' + self.rawencode(query)
         return {'url': url, 'method': method, 'body': body, 'headers': headers}
 
-    def handle_errors(self, httpCode, reason, url, method, headers, body, response):
+    def handle_errors(self, httpCode, reason, url, method, headers, body, response, requestHeaders, requestBody):
         if response is None:
             return  # fallback to default error handler
         #

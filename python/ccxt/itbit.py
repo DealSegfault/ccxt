@@ -21,6 +21,7 @@ class itbit (Exchange):
             'has': {
                 'CORS': True,
                 'createMarketOrder': False,
+                'fetchMyTrades': True,
             },
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/1294454/27822159-66153620-60ad-11e7-89e7-005f6d7f3de0.jpg',
@@ -271,7 +272,7 @@ class itbit (Exchange):
             currency = self.safe_string(item, 'currency')
             destinationAddress = self.safe_string(item, 'destinationAddress')
             txnHash = self.safe_string(item, 'txnHash')
-            transactionType = self.safe_string(item, 'transactionType').lower()
+            transactionType = self.safe_string_lower(item, 'transactionType')
             transactionStatus = self.safe_string(item, 'status')
             status = self.parse_transfer_status(transactionStatus)
             result.append({
@@ -515,7 +516,7 @@ class itbit (Exchange):
             binhash = self.binary_concat(binaryUrl, hash)
             signature = self.hmac(binhash, self.encode(self.secret), hashlib.sha512, 'base64')
             headers = {
-                'Authorization': self.apiKey + ':' + signature,
+                'Authorization': self.apiKey + ':' + self.decode(signature),
                 'Content-Type': 'application/json',
                 'X-Auth-Timestamp': timestamp,
                 'X-Auth-Nonce': nonce,

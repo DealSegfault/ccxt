@@ -284,6 +284,7 @@ class bitfinex extends Exchange {
                 'DAD' => 'DADI',
                 'DAT' => 'DATA',
                 'DSH' => 'DASH',
+                'DRK' => 'DRK',
                 'GSD' => 'GUSD',
                 'HOT' => 'Hydro Protocol',
                 'IOS' => 'IOST',
@@ -340,7 +341,9 @@ class bitfinex extends Exchange {
                     'ANT' => 'ant',
                     'AVT' => 'aventus', // #1811
                     'BAT' => 'bat',
-                    'BCH' => 'bcash', // undocumented
+                    // https://github.com/ccxt/ccxt/issues/5833
+                    'BCH' => 'bab', // undocumented
+                    // 'BCH' => 'bcash', // undocumented
                     'BCI' => 'bci',
                     'BFT' => 'bft',
                     'BTC' => 'bitcoin',
@@ -361,6 +364,9 @@ class bitfinex extends Exchange {
                     'GNT' => 'golem',
                     'IOST' => 'ios',
                     'IOTA' => 'iota',
+                    // https://github.com/ccxt/ccxt/issues/5833
+                    'LEO' => 'let', // ETH chain
+                    // 'LEO' => 'les', // EOS chain
                     'LRC' => 'lrc',
                     'LTC' => 'litecoin',
                     'LYM' => 'lym',
@@ -387,6 +393,7 @@ class bitfinex extends Exchange {
                     'TNB' => 'tnb',
                     'TRX' => 'trx',
                     'USD' => 'wire',
+                    'USDC' => 'udc', // https://github.com/ccxt/ccxt/issues/5833
                     'UTK' => 'utk',
                     'USDT' => 'tetheruso', // undocumented
                     'VEE' => 'vee',
@@ -655,10 +662,7 @@ class bitfinex extends Exchange {
             $timestamp = intval ($timestamp) * 1000;
         }
         $type = null;
-        $side = $this->safe_string($trade, 'type');
-        if ($side !== null) {
-            $side = strtolower($side);
-        }
+        $side = $this->safe_string_lower($trade, 'type');
         $orderId = $this->safe_string($trade, 'order_id');
         $price = $this->safe_float($trade, 'price');
         $amount = $this->safe_float($trade, 'amount');
@@ -987,7 +991,7 @@ class bitfinex extends Exchange {
         //         }
         //     )
         //
-        return $this->parseTransactions ($response, $currency, $since, $limit);
+        return $this->parse_transactions($response, $currency, $since, $limit);
     }
 
     public function parse_transaction ($transaction, $currency = null) {
@@ -1036,10 +1040,7 @@ class bitfinex extends Exchange {
         }
         $currencyId = $this->safe_string($transaction, 'currency');
         $code = $this->safe_currency_code($currencyId, $currency);
-        $type = $this->safe_string($transaction, 'type'); // DEPOSIT or WITHDRAWAL
-        if ($type !== null) {
-            $type = strtolower($type);
-        }
+        $type = $this->safe_string_lower($transaction, 'type'); // DEPOSIT or WITHDRAWAL
         $status = $this->parse_transaction_status ($this->safe_string($transaction, 'status'));
         $feeCost = $this->safe_float($transaction, 'fee');
         if ($feeCost !== null) {
@@ -1147,7 +1148,7 @@ class bitfinex extends Exchange {
         return array( 'url' => $url, 'method' => $method, 'body' => $body, 'headers' => $headers );
     }
 
-    public function handle_errors ($code, $reason, $url, $method, $headers, $body, $response) {
+    public function handle_errors ($code, $reason, $url, $method, $headers, $body, $response, $requestHeaders, $requestBody) {
         if ($response === null) {
             return;
         }

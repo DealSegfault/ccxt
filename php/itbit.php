@@ -19,6 +19,7 @@ class itbit extends Exchange {
             'has' => array (
                 'CORS' => true,
                 'createMarketOrder' => false,
+                'fetchMyTrades' => true,
             ),
             'urls' => array (
                 'logo' => 'https://user-images.githubusercontent.com/1294454/27822159-66153620-60ad-11e7-89e7-005f6d7f3de0.jpg',
@@ -289,7 +290,7 @@ class itbit extends Exchange {
             $currency = $this->safe_string($item, 'currency');
             $destinationAddress = $this->safe_string($item, 'destinationAddress');
             $txnHash = $this->safe_string($item, 'txnHash');
-            $transactionType = strtolower($this->safe_string($item, 'transactionType'));
+            $transactionType = $this->safe_string_lower($item, 'transactionType');
             $transactionStatus = $this->safe_string($item, 'status');
             $status = $this->parse_transfer_status ($transactionStatus);
             $result[] = array (
@@ -562,7 +563,7 @@ class itbit extends Exchange {
             $binhash = $this->binary_concat($binaryUrl, $hash);
             $signature = $this->hmac ($binhash, $this->encode ($this->secret), 'sha512', 'base64');
             $headers = array (
-                'Authorization' => $this->apiKey . ':' . $signature,
+                'Authorization' => $this->apiKey . ':' . $this->decode ($signature),
                 'Content-Type' => 'application/json',
                 'X-Auth-Timestamp' => $timestamp,
                 'X-Auth-Nonce' => $nonce,
