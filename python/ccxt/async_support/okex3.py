@@ -32,7 +32,7 @@ from ccxt.base.errors import InvalidNonce
 from ccxt.base.errors import RequestTimeout
 
 
-class okex3 (Exchange):
+class okex3(Exchange):
 
     def describe(self):
         return self.deep_extend(super(okex3, self).describe(), {
@@ -116,6 +116,7 @@ class okex3 (Exchange):
                         'orders/{order_id}',
                         'orders/{client_oid}',
                         'fills',
+                        'algo',
                         # public
                         'instruments',
                         'instruments/{instrument_id}/book',
@@ -125,10 +126,12 @@ class okex3 (Exchange):
                         'instruments/{instrument_id}/candles',
                     ],
                     'post': [
+                        'order_algo',
                         'orders',
                         'batch_orders',
                         'cancel_orders/{order_id}',
                         'cancel_orders/{client_oid}',
+                        'cancel_batch_algos',
                         'cancel_batch_orders',
                     ],
                 },
@@ -269,12 +272,12 @@ class okex3 (Exchange):
                     'maker': 0.0010,
                 },
                 'futures': {
-                    'taker': 0.0030,
-                    'maker': 0.0020,
+                    'taker': 0.0005,
+                    'maker': 0.0002,
                 },
                 'swap': {
-                    'taker': 0.0070,
-                    'maker': 0.0020,
+                    'taker': 0.00075,
+                    'maker': 0.00020,
                 },
             },
             'requiredCredentials': {
@@ -292,8 +295,7 @@ class okex3 (Exchange):
                 'exact': {
                     '1': ExchangeError,  # {"code": 1, "message": "System error"}
                     # undocumented
-                    'failure to get a peer from the ring-balancer': ExchangeError,  # {"message": "failure to get a peer from the ring-balancer"}
-                    '"instrument_id" is an invalid parameter': BadSymbol,  # {"code":30024,"message":"\"instrument_id\" is an invalid parameter"}
+                    'failure to get a peer from the ring-balancer': ExchangeNotAvailable,  # {"message": "failure to get a peer from the ring-balancer"}
                     '4010': PermissionDenied,  # {"code": 4010, "message": "For the security of your funds, withdrawals are not permitted within 24 hours after changing fund password  / mobile number / Google Authenticator settings "}
                     # common
                     '30001': AuthenticationError,  # {"code": 30001, "message": 'request header "OK_ACCESS_KEY" cannot be blank'}
@@ -319,7 +321,7 @@ class okex3 (Exchange):
                     '30021': BadRequest,  # {"code": 30021, "message": "Json data format error"}, {"code": 30021, "message": "json data format error"}
                     '30022': PermissionDenied,  # {"code": 30022, "message": "Api has been frozen"}
                     '30023': BadRequest,  # {"code": 30023, "message": "{0} parameter cannot be blank"}
-                    '30024': BadRequest,  # {"code": 30024, "message": "{0} parameter value error"}
+                    '30024': BadSymbol,  # {"code":30024,"message":"\"instrument_id\" is an invalid parameter"}
                     '30025': BadRequest,  # {"code": 30025, "message": "{0} parameter category error"}
                     '30026': DDoSProtection,  # {"code": 30026, "message": "requested too frequent"}
                     '30027': AuthenticationError,  # {"code": 30027, "message": "login failure"}
@@ -327,7 +329,7 @@ class okex3 (Exchange):
                     '30029': AccountSuspended,  # {"code": 30029, "message": "account suspended"}
                     '30030': ExchangeError,  # {"code": 30030, "message": "endpoint request failed. Please try again"}
                     '30031': BadRequest,  # {"code": 30031, "message": "token does not exist"}
-                    '30032': ExchangeError,  # {"code": 30032, "message": "pair does not exist"}
+                    '30032': BadSymbol,  # {"code": 30032, "message": "pair does not exist"}
                     '30033': BadRequest,  # {"code": 30033, "message": "exchange domain does not exist"}
                     '30034': ExchangeError,  # {"code": 30034, "message": "exchange ID does not exist"}
                     '30035': ExchangeError,  # {"code": 30035, "message": "trading is not supported in self website"}
@@ -468,6 +470,7 @@ class okex3 (Exchange):
                 },
             },
             'options': {
+                'createMarketBuyOrderRequiresPrice': True,
                 'fetchMarkets': ['spot', 'futures', 'swap'],
                 'defaultType': 'spot',  # 'account', 'spot', 'margin', 'futures', 'swap'
                 'auth': {
@@ -568,12 +571,14 @@ class okex3 (Exchange):
         future = False
         swap = False
         baseId = self.safe_string(market, 'base_currency')
-        if baseId is None:
+        contractVal = self.safe_float(market, 'contract_val')
+        if contractVal is not None:
             marketType = 'swap'
             spot = False
             swap = True
             baseId = self.safe_string(market, 'coin')
-            if baseId is None:
+            futuresAlias = self.safe_string(market, 'alias')
+            if futuresAlias is not None:
                 swap = False
                 future = True
                 marketType = 'futures'
@@ -930,8 +935,14 @@ class okex3 (Exchange):
         fee = None
         if feeCost is not None:
             feeCurrency = None
+            if market is not None:
+                feeCurrency = market['base'] if (side == 'buy') else market['quote']
             fee = {
-                'cost': feeCost,
+                # fee is either a positive number(invitation rebate)
+                # or a negative number(transaction fee deduction)
+                # therefore we need to invert the fee
+                # more about it https://github.com/ccxt/ccxt/issues/5909
+                'cost': -feeCost,
                 'currency': feeCurrency,
             }
         orderId = self.safe_string(trade, 'order_id')
@@ -1196,6 +1207,8 @@ class okex3 (Exchange):
                 'product_id',
                 'risk_rate',
                 'margin_ratio',
+                'maint_margin_ratio',
+                'tiers',
             ])
             keys = list(omittedBalance.keys())
             accounts = {}
@@ -1212,7 +1225,7 @@ class okex3 (Exchange):
                     account['free'] = self.safe_float(marketBalance, 'available')
                     accounts[code] = account
                 else:
-                    raise NotSupported(self.id + ' margin balance response format has changednot ')
+                    raise NotSupported(self.id + ' margin balance response format has changed!')
             result[symbol] = self.parse_balance(accounts)
         return result
 
@@ -1544,7 +1557,7 @@ class okex3 (Exchange):
             request['order_id'] = id
         query = self.omit(params, 'type')
         response = await getattr(self, method)(self.extend(request, query))
-        result = response if ('result' in list(response.keys())) else self.safe_value(response, market['id'], {})
+        result = response if ('result' in response) else self.safe_value(response, market['id'], {})
         #
         # spot, margin
         #
@@ -1988,14 +2001,14 @@ class okex3 (Exchange):
             'amount': self.number_to_string(amount),
             'fee': fee,  # String. Network transaction fee ≥ 0. Withdrawals to OKCoin or OKEx are fee-free, please set as 0. Withdrawal to external digital asset address requires network transaction fee.
         }
-        if self.password:
-            request['trade_pwd'] = self.password
-        elif 'password' in params:
+        if 'password' in params:
             request['trade_pwd'] = params['password']
         elif 'trade_pwd' in params:
             request['trade_pwd'] = params['trade_pwd']
+        elif self.password:
+            request['trade_pwd'] = self.password
         query = self.omit(params, ['fee', 'password', 'trade_pwd'])
-        if not('trade_pwd' in list(request.keys())):
+        if not ('trade_pwd' in request):
             raise ExchangeError(self.id + ' withdraw() requires self.password set on the exchange instance or a password / trade_pwd parameter')
         response = await self.accountPostWithdrawal(self.extend(request, query))
         #
@@ -2119,6 +2132,8 @@ class okex3 (Exchange):
             id = withdrawalId
             address = addressTo
         else:
+            # the payment_id will appear on new deposits but appears to be removed from the response after 2 months
+            id = self.safe_string(transaction, 'payment_id')
             type = 'deposit'
             address = addressTo
         currencyId = self.safe_string(transaction, 'currency')
@@ -2409,7 +2424,9 @@ class okex3 (Exchange):
         #         },
         #     ]
         #
-        entries = response[0] if (type == 'margin') else response
+        isArray = isinstance(response[0], list)
+        isMargin = (type == 'margin')
+        entries = response[0] if (isMargin and isArray) else response
         return self.parse_ledger(entries, currency, since, limit)
 
     def parse_ledger_entry_type(self, type):
@@ -2572,7 +2589,7 @@ class okex3 (Exchange):
 
     def get_path_authentication_type(self, path):
         auth = self.safe_value(self.options, 'auth', {})
-        key = self.findBroadlyMatchedKey(auth, path)
+        key = self.find_broadly_matched_key(auth, path)
         return self.safe_string(auth, key, 'private')
 
     def handle_errors(self, code, reason, url, method, headers, body, response, requestHeaders, requestBody):
@@ -2581,17 +2598,11 @@ class okex3 (Exchange):
             raise ExchangeError(feedback)
         if not response:
             return  # fallback to default error handler
-        exact = self.exceptions['exact']
         message = self.safe_string(response, 'message')
         errorCode = self.safe_string_2(response, 'code', 'error_code')
         if message is not None:
-            if message in exact:
-                raise exact[message](feedback)
-            broad = self.exceptions['broad']
-            broadKey = self.findBroadlyMatchedKey(broad, message)
-            if broadKey is not None:
-                raise broad[broadKey](feedback)
-        if errorCode in exact:
-            raise exact[errorCode](feedback)
+            self.throw_exactly_matched_exception(self.exceptions['exact'], message, feedback)
+            self.throw_broadly_matched_exception(self.exceptions['broad'], message, feedback)
+        self.throw_exactly_matched_exception(self.exceptions['exact'], errorCode, feedback)
         if message is not None:
             raise ExchangeError(feedback)  # unknown message

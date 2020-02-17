@@ -3,7 +3,7 @@
 //  ---------------------------------------------------------------------------
 
 const Exchange = require ('./base/Exchange');
-const { ExchangeError, AuthenticationError, DDoSProtection, ArgumentsRequired } = require ('./base/errors');
+const { ExchangeError, AuthenticationError, RateLimitExceeded, ArgumentsRequired } = require ('./base/errors');
 
 //  ---------------------------------------------------------------------------
 
@@ -189,10 +189,10 @@ module.exports = class coinfalcon extends Exchange {
         let fee = undefined;
         const feeCost = this.safeFloat (trade, 'fee');
         if (feeCost !== undefined) {
-            const feeCurrencyCode = undefined;
+            const feeCurrencyCode = this.safeString (trade, 'fee_currency_code');
             fee = {
                 'cost': feeCost,
-                'currency': feeCurrencyCode,
+                'currency': this.safeCurrencyCode (feeCurrencyCode),
             };
         }
         return {
@@ -422,7 +422,7 @@ module.exports = class coinfalcon extends Exchange {
         }
         const ErrorClass = this.safeValue ({
             '401': AuthenticationError,
-            '429': DDoSProtection,
+            '429': RateLimitExceeded,
         }, code, ExchangeError);
         throw new ErrorClass (body);
     }

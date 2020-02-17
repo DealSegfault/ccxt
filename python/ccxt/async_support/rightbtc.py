@@ -14,7 +14,7 @@ from ccxt.base.errors import OrderNotFound
 from ccxt.base.decimal_to_precision import ROUND
 
 
-class rightbtc (Exchange):
+class rightbtc(Exchange):
 
     def describe(self):
         return self.deep_extend(super(rightbtc, self).describe(), {
@@ -94,7 +94,7 @@ class rightbtc (Exchange):
                     # 0.01 ETP
                     # 0.001 ETH
                     # 0.1 BITCNY
-                    'maker': 0.2 / 100,
+                    'maker': 0.1 / 100,
                     'taker': 0.2 / 100,
                 },
                 'funding': {
@@ -117,11 +117,11 @@ class rightbtc (Exchange):
                         # 'BitCNY': n => 0.1 + n * (1 / 100),
                         # 'MTX': n => 1 + n * (1 / 100),
                         'ETP': 0.01,
-                        'BTC': 0.001,
-                        'ETH': 0.01,
+                        'BTC': 0.0005,
+                        'ETH': 0.005,
                         'ETC': 0.01,
                         'STORJ': 3,
-                        'LTC': 0.001,
+                        'LTC': 0.01,
                         'ZEC': 0.001,
                         'BCC': 0.001,
                         'XRB': 0,
@@ -244,7 +244,7 @@ class rightbtc (Exchange):
         for i in range(0, len(tickers)):
             ticker = tickers[i]
             id = ticker['market']
-            if not(id in list(self.marketsById.keys())):
+            if not (id in self.marketsById):
                 continue
             market = self.marketsById[id]
             symbol = market['symbol']
@@ -555,7 +555,7 @@ class rightbtc (Exchange):
         #
         orders = self.parse_orders(response['result'], market)
         ordersById = self.index_by(orders, 'id')
-        if not(id in list(ordersById.keys())):
+        if not (id in ordersById):
             raise OrderNotFound(self.id + ' fetchOrder could not find order ' + str(id) + ' in open orders.')
         return ordersById[id]
 
@@ -701,8 +701,6 @@ class rightbtc (Exchange):
             success = self.safe_string(status, 'success')
             if success != '1':
                 message = self.safe_string(status, 'message')
-                feedback = self.id + ' ' + self.json(response)
-                exceptions = self.exceptions
-                if message in exceptions:
-                    raise exceptions[message](feedback)
+                feedback = self.id + ' ' + body
+                self.throw_exactly_matched_exception(self.exceptions, message, feedback)
                 raise ExchangeError(feedback)

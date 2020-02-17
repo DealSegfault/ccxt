@@ -7,61 +7,9 @@ declare module 'ccxt' {
         [key: string]: T;
     }
 
-    // error.js -----------------------------------------
+    // errors.js -----------------------------------------
 
     export class BaseError extends Error {
-        constructor(message: string);
-    }
-
-    export class ExchangeError extends BaseError {
-        constructor(message: string);
-    }
-
-    export class NotSupported extends ExchangeError {
-        constructor(message: string);
-    }
-
-    export class AuthenticationError extends ExchangeError {
-        constructor(message: string);
-    }
-
-    export class InvalidNonce extends ExchangeError {
-        constructor(message: string);
-    }
-
-    export class InsufficientFunds extends ExchangeError {
-        constructor(message: string);
-    }
-
-    export class InvalidOrder extends ExchangeError {
-        constructor(message: string);
-    }
-
-    export class OrderNotFound extends InvalidOrder {
-        constructor(message: string);
-    }
-
-    export class OrderNotCached extends InvalidOrder {
-        constructor(message: string);
-    }
-
-    export class CancelPending extends InvalidOrder {
-        constructor(message: string);
-    }
-
-    export class NetworkError extends BaseError {
-        constructor(message: string);
-    }
-
-    export class DDoSProtection extends NetworkError {
-        constructor(message: string);
-    }
-
-    export class RequestTimeout extends NetworkError {
-        constructor(message: string);
-    }
-
-    export class ExchangeNotAvailable extends NetworkError {
         constructor(message: string);
     }
 
@@ -102,6 +50,7 @@ declare module 'ccxt' {
         type: 'market' | 'limit';
         side: 'buy' | 'sell';
         price: number;
+        average?: number;
         amount: number;
         filled: number;
         remaining: number;
@@ -180,6 +129,8 @@ declare module 'ccxt' {
     export interface Currency {
         id: string;
         code: string;
+        numericId?: number;
+        precision: number;
     }
 
     export interface Balance {
@@ -453,7 +404,6 @@ declare module 'ccxt' {
     export class _1btcxe extends Exchange {}
     export class acx extends Exchange {}
     export class adara extends Exchange {}
-    export class allcoin extends okcoinusd {}
     export class anxpro extends Exchange {}
     export class bcex extends Exchange {}
     export class bequant extends hitbtc2 {}
@@ -473,6 +423,7 @@ declare module 'ccxt' {
     export class bitkk extends zb {}
     export class bitlish extends Exchange {}
     export class bitmart extends Exchange {}
+    export class bitmax extends Exchange {}
     export class bitmex extends Exchange {}
     export class bitso extends Exchange {}
     export class bitstamp extends Exchange {}
@@ -480,7 +431,7 @@ declare module 'ccxt' {
     export class bittrex extends Exchange {}
     export class bitz extends Exchange {}
     export class bl3p extends Exchange {}
-    export class bleutrade extends bittrex {}
+    export class bleutrade extends Exchange {}
     export class braziliex extends Exchange {}
     export class btcalpha extends Exchange {}
     export class btcbox extends Exchange {}
@@ -500,7 +451,6 @@ declare module 'ccxt' {
     export class coincheck extends Exchange {}
     export class coinegg extends Exchange {}
     export class coinex extends Exchange {}
-    export class coinexchange extends Exchange {}
     export class coinfalcon extends Exchange {}
     export class coinfloor extends Exchange {}
     export class coingi extends Exchange {}
@@ -508,21 +458,19 @@ declare module 'ccxt' {
     export class coinmate extends Exchange {}
     export class coinone extends Exchange {}
     export class coinspot extends Exchange {}
-    export class cointiger extends huobipro {}
     export class coolcoin extends coinegg {}
     export class coss extends Exchange {}
     export class crex24 extends Exchange {}
     export class deribit extends Exchange {}
     export class digifinex extends Exchange {}
     export class dsx extends Exchange {}
-    export class dx extends Exchange {}
-    export class ethfinex extends bitfinex {}
     export class exmo extends Exchange {}
     export class exx extends Exchange {}
     export class fcoin extends Exchange {}
     export class fcoinjp extends fcoin {}
     export class flowbtc extends Exchange {}
     export class foxbit extends Exchange {}
+    export class ftx extends Exchange {}
     export class fybse extends Exchange {}
     export class gateio extends Exchange {}
     export class gemini extends Exchange {}
@@ -538,7 +486,6 @@ declare module 'ccxt' {
     export class kkex extends Exchange {}
     export class kraken extends Exchange {}
     export class kucoin extends Exchange {}
-    export class kucoin2 extends kucoin {}
     export class kuna extends acx {}
     export class lakebtc extends Exchange {}
     export class latoken extends Exchange {}
@@ -547,10 +494,8 @@ declare module 'ccxt' {
     export class livecoin extends Exchange {}
     export class luno extends Exchange {}
     export class lykke extends Exchange {}
-    export class mandala extends Exchange {}
     export class mercado extends Exchange {}
     export class mixcoins extends Exchange {}
-    export class negociecoins extends Exchange {}
     export class oceanex extends Exchange {}
     export class okcoincny extends okcoinusd {}
     export class okcoinusd extends Exchange {}
@@ -560,16 +505,19 @@ declare module 'ccxt' {
     export class poloniex extends Exchange {}
     export class rightbtc extends Exchange {}
     export class southxchange extends Exchange {}
+    export class stex extends Exchange {}
     export class stronghold extends Exchange {}
     export class surbitcoin extends foxbit {}
     export class theocean extends Exchange {}
     export class therock extends Exchange {}
     export class tidebit extends Exchange {}
     export class tidex extends Exchange {}
+    export class timex extends Exchange {}
+    export class topq extends bw {}
     export class upbit extends Exchange {}
     export class vaultoro extends Exchange {}
     export class vbtc extends foxbit {}
-    export class virwox extends Exchange {}
+    export class whitebit extends Exchange {}
     export class xbtce extends Exchange {}
     export class yobit extends Exchange {}
     export class zaif extends Exchange {}
